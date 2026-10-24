@@ -1,0 +1,49 @@
+PRESERVE idle-overhead report -- 2026-10-22 05:49:44
+
+Metric                          | Value
+--------------------------------+-----------------------------------------------------------------------------------
+scenario / window               | B / 120.0s at 0.5s interval
+runs per arm                    | 3 requested; used A=3 B=3
+excluded runs                   | none
+arm B memory environment        | confined: MemoryMax=512M, MemorySwapMax=0 (same limits as arm A)
+-- GOVERNOR SELF-COST --        |
+sampling iterations             | 240 [240-240]
+per-iteration mean              | 1.158 ms [1.070 ms-1.177 ms]
+per-iteration p95               | 1.514 ms [1.469 ms-1.565 ms]
+per-iteration max               | 3.924 ms [2.352 ms-15.128 ms]
+governor CPU time               | 0.278 s [0.265 s-0.282 s]
+governor CPU, % of one core     | 0.232 % [0.221 %-0.235 %]
+governor RSS start              | 20.54 MiB [20.53 MiB-20.54 MiB]
+governor RSS end                | 20.60 MiB [20.59 MiB-20.60 MiB]
+governor RSS delta (leak check) | 0.06 MiB [0.06 MiB-0.07 MiB]
+captures / restores             | 0 / 0  (idle: must be 0/0)
+pressure levels seen            | {'normal': 240}  stayed below advisory: True
+-- ARENA COST --                |
+arena kind                      | disk budget (ext4 directory), not pinned RAM
+arena budget (disk cap)         | 2048 MiB
+arena peak on-disk use          | unknown - arena not readable by this uid (readable=False)
+images written while idle       | 0 (captures=0 => the arena was not written to)
+arena RAM pinned                | 0.0 MiB
+free-space guard (fs_reserve)   | 1024 MiB kept free on the filesystem
+budget vs protected cgroup      | 2048 MiB disk / 512 MiB = 4.0x (arena_size_mib is configurable)
+-- WORKLOAD THROUGHPUT A/B --   |
+iterations, governor running    | 1739 [1700-1740]
+iterations, no governor         | 1692 [1691-1710]
+difference (no-gov - gov)       | -47 iterations (-2.78% of no-governor median)
+run-to-run noise band           | +/-40 iterations (widest within-arm spread)
+verdict                         | difference -47 exceeds the noise band 40; a real cost of about -2.78% is indicated
+
+Idle = the normal case: the workload runs, there is no antagonist, pressure never
+reaches the advisory threshold, and the governor samples and decides not to act.
+
+The arena is a byte-budgeted DIRECTORY on ext4, not pinned memory: the code only
+creates it (mkdir), stats the files in it, and calls statvfs. It holds no RAM at any
+time, and an idle governor writes nothing into it (images written: 0 above). A
+checkpoint of this workload is ~307 MiB, so the 2048 MiB budget is a cap on
+concurrent image sets, not a reservation. The 4x ratio against the 512 MiB protected
+cgroup is a configuration choice (arena_size_mib): in a real deployment it would be
+sized to the protected workload, not left at 4x. The real standing cost of an idle
+governor is the CPU and RSS above, plus fs_reserve_mib of filesystem free space that
+the admission test keeps spare.
+
+Per-run logs and JSON: evidence/overhead-20261022-053739/

@@ -1,0 +1,33 @@
+PRESERVE fail-safe matrix -- 2026-10-22 16:14:22  (scenario B)
+Arena at session start (reaped first): ARENA: before 307.1 MiB in 1 image(s); deleted 0 (0.0 MiB); kept 1 still-checkpointed; now 307.1 of 2048 MiB
+
+Fault             | Reached capture?        | Process state at exit                                                                           | Same as baseline?
+------------------+-------------------------+-------------------------------------------------------------------------------------------------+---------------------------------------
+baseline (clean)  | n/a                     | compute_job killed by kernel OOM                                                                | reference
+none (clean live) | yes (dumped+restored)   | restored, resumed                                                                               | better (work preserved)
+arena-too-small   | no (stood down)         | stood down; compute_job killed by kernel OOM                                                    | yes (compute killed == baseline)
+dump-fail         | attempted (dump failed) | dump failed (ENOSPC); survived the failure, then killed by kernel OOM                           | yes (== baseline)
+dump-timeout      | attempted (dump failed) | dump failed (timeout); survived the failure, then killed by kernel OOM                          | yes (== baseline)
+restore-blocked   | yes (dumped)            | checkpointed, not restored; image present on disk                                               | work recoverable, job incomplete
+stale-pid         | no (stood down)         | stood down; compute_job killed by kernel OOM                                                    | yes (compute killed == baseline)
+governor-dies     | no (crashed first)      | governor died before capture; compute_job still under kernel at that point (pids: 16617 16628 ) | yes (kernel in charge, == no governor)
+
+Reached capture?  = did the governor get as far as attempting a CRIU dump.
+Process state     = the valuable compute_job's fate when the run ended.
+Same as baseline? = baseline kills compute_job and destroys its work; a fail-safe
+                    outcome is no worse ('yes'). A cell may say 'better' ONLY if the
+                    valuable process was in a better state AT EXIT than in baseline.
+failed dumps      : a dump that fails after the process is frozen and partially written
+                    does not cost the process -- PRESERVE does not destroy work the
+                    kernel would have kept. The process resumes unfrozen and is then left
+                    to the kernel, which kills it exactly as in baseline. That is a
+                    fail-safe guarantee, not an improvement over baseline.
+restore-blocked   : a permanently blocked restore leaves the work intact on disk but the
+                    job unfinished ('work recoverable, job incomplete'). That is better
+                    than baseline only if the restore can eventually proceed; within the
+                    run itself the job does not complete, so it does not beat baseline on
+                    completion.
+UNCLASSIFIED      : the run's log lacked the evidence to decide this row; read the named
+                    evidence directory. Never treated as a pass.
+
+Per-run evidence: evidence/failsafe-20261022-160303-<label>/

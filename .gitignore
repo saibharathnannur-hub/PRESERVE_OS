@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.pyc
+venv/
+.venv/
+
+# CRIU checkpoint images and the checkpoint arena
+arena/
+*.img
+
+# runtime state, locks, temp files
+run/
+*.lock
+*.tmp
+*.state.json
+*.progress.log
+
+# evidence: only the small text summaries are kept
+evidence/*
+!evidence/matrix-20261022-043246.txt
+!evidence/failsafe-20261022-160303.txt
+!evidence/overhead-20261022-053739.txt
+!evidence/video-20261025-003739/
+evidence/video-20261025-003739/*
+!evidence/video-20261025-003739/summary.txt
+
+# generated custom config of run_all.sh
+.run_all-custom.conf

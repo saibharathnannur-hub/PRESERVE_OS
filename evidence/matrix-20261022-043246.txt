@@ -1,0 +1,62 @@
+PRESERVE experiment matrix -- 2026-10-22 05:26:21  (repeat=10)
+Arena at batch start (reaped before each batch):
+  batch 1: ARENA: before 0.0 MiB in 0 image(s); deleted 0 (0.0 MiB); kept 0 still-checkpointed; now 0.0 of 2048 MiB
+  batch 2: ARENA: before 0.0 MiB in 0 image(s); deleted 0 (0.0 MiB); kept 0 still-checkpointed; now 0.0 of 2048 MiB
+  batch 3: ARENA: before 0.0 MiB in 0 image(s); deleted 0 (0.0 MiB); kept 0 still-checkpointed; now 0.0 of 2048 MiB
+  batch 4: ARENA: before 0.0 MiB in 0 image(s); deleted 0 (0.0 MiB); kept 0 still-checkpointed; now 0.0 of 2048 MiB
+
+Scenario | Mode         | OOM kills | Victim          | Work destroyed         | Work preserved         | Dump                | Restore             | Benefit      
+---------+--------------+-----------+-----------------+------------------------+------------------------+---------------------+---------------------+--------------
+B        | baseline x10 | 1 [1-1]   | compute (10/10) | 12.66s [11.22s-13.10s] | n/a                    | n/a                 | n/a                 | n/a          
+B        | PRESERVE x10 | 0 [0-0]   | none (10/10)    | 0.00s [0.00s-0.00s]    | 12.19s [11.46s-12.34s] | 0.30s [0.26s-0.41s] | 0.27s [0.25s-0.30s] | yes (+12.19s)
+A        | baseline x10 | 1 [1-1]   | hog (10/10)     | 0.54s [0.47s-0.56s]    | n/a                    | n/a                 | n/a                 | n/a          
+A        | PRESERVE x10 | 0 [0-0]   | none (10/10)    | 0.00s [0.00s-0.00s]    | 8.13s [7.53s-8.34s]    | 0.17s [0.15s-0.19s] | 0.13s [0.11s-0.23s] | none         
+
+Headline (Scenario B): the kernel OOM killer destroyed 12.66s of compute_job's work; PRESERVE checkpointed 12.19s of work and resumed it with nothing lost (medians, n=10 / n=10).
+
+Work destroyed = accumulated work of processes the kernel killed (cost-model R at death).
+Work preserved = compute_job work held at the checkpoint and resumed after restore.
+Benefit        = PRESERVE row vs the same scenario's baseline in this session: yes (+Xs) if the baseline OOM killer killed compute_job and PRESERVE kept it (X = work preserved); none if the baseline never killed compute_job, so the preserved work was never at risk; n/a for baseline and dry-run rows.
+With repeats: median [min-max].
+
+Runs and evidence:
+   1. B                baseline  rc=0   ok           /home/whitman/preserve/evidence/demo-20261022-043246-baseline-B
+   2. B                baseline  rc=0   ok           /home/whitman/preserve/evidence/demo-20261022-043357-baseline-B
+   3. B                baseline  rc=0   ok           /home/whitman/preserve/evidence/demo-20261022-043508-baseline-B
+   4. B                baseline  rc=0   ok           /home/whitman/preserve/evidence/demo-20261022-043619-baseline-B
+   5. B                baseline  rc=0   ok           /home/whitman/preserve/evidence/demo-20261022-043730-baseline-B
+   6. B                baseline  rc=0   ok           /home/whitman/preserve/evidence/demo-20261022-043839-baseline-B
+   7. B                baseline  rc=0   ok           /home/whitman/preserve/evidence/demo-20261022-043949-baseline-B
+   8. B                baseline  rc=0   ok           /home/whitman/preserve/evidence/demo-20261022-044059-baseline-B
+   9. B                baseline  rc=0   ok           /home/whitman/preserve/evidence/demo-20261022-044208-baseline-B
+  10. B                baseline  rc=0   ok           /home/whitman/preserve/evidence/demo-20261022-044318-baseline-B
+  11. B                PRESERVE  rc=0   ok           /home/whitman/preserve/evidence/demo-20261022-044428-live-B
+  12. B                PRESERVE  rc=0   ok           /home/whitman/preserve/evidence/demo-20261022-044612-live-B
+  13. B                PRESERVE  rc=0   ok           /home/whitman/preserve/evidence/demo-20261022-044759-live-B
+  14. B                PRESERVE  rc=0   ok           /home/whitman/preserve/evidence/demo-20261022-044943-live-B
+  15. B                PRESERVE  rc=0   ok           /home/whitman/preserve/evidence/demo-20261022-045129-live-B
+  16. B                PRESERVE  rc=0   ok           /home/whitman/preserve/evidence/demo-20261022-045315-live-B
+  17. B                PRESERVE  rc=0   ok           /home/whitman/preserve/evidence/demo-20261022-045500-live-B
+  18. B                PRESERVE  rc=0   ok           /home/whitman/preserve/evidence/demo-20261022-045644-live-B
+  19. B                PRESERVE  rc=0   ok           /home/whitman/preserve/evidence/demo-20261022-045828-live-B
+  20. B                PRESERVE  rc=0   ok           /home/whitman/preserve/evidence/demo-20261022-050014-live-B
+  21. A                baseline  rc=0   ok           /home/whitman/preserve/evidence/demo-20261022-050159-baseline-A
+  22. A                baseline  rc=0   ok           /home/whitman/preserve/evidence/demo-20261022-050256-baseline-A
+  23. A                baseline  rc=0   ok           /home/whitman/preserve/evidence/demo-20261022-050352-baseline-A
+  24. A                baseline  rc=0   ok           /home/whitman/preserve/evidence/demo-20261022-050447-baseline-A
+  25. A                baseline  rc=0   ok           /home/whitman/preserve/evidence/demo-20261022-050544-baseline-A
+  26. A                baseline  rc=0   ok           /home/whitman/preserve/evidence/demo-20261022-050641-baseline-A
+  27. A                baseline  rc=0   ok           /home/whitman/preserve/evidence/demo-20261022-050736-baseline-A
+  28. A                baseline  rc=0   ok           /home/whitman/preserve/evidence/demo-20261022-050833-baseline-A
+  29. A                baseline  rc=0   ok           /home/whitman/preserve/evidence/demo-20261022-050928-baseline-A
+  30. A                baseline  rc=0   ok           /home/whitman/preserve/evidence/demo-20261022-051024-baseline-A
+  31. A                PRESERVE  rc=0   ok           /home/whitman/preserve/evidence/demo-20261022-051120-live-A
+  32. A                PRESERVE  rc=0   ok           /home/whitman/preserve/evidence/demo-20261022-051250-live-A
+  33. A                PRESERVE  rc=0   ok           /home/whitman/preserve/evidence/demo-20261022-051420-live-A
+  34. A                PRESERVE  rc=0   ok           /home/whitman/preserve/evidence/demo-20261022-051549-live-A
+  35. A                PRESERVE  rc=0   ok           /home/whitman/preserve/evidence/demo-20261022-051719-live-A
+  36. A                PRESERVE  rc=0   ok           /home/whitman/preserve/evidence/demo-20261022-051850-live-A
+  37. A                PRESERVE  rc=0   ok           /home/whitman/preserve/evidence/demo-20261022-052021-live-A
+  38. A                PRESERVE  rc=0   ok           /home/whitman/preserve/evidence/demo-20261022-052151-live-A
+  39. A                PRESERVE  rc=0   ok           /home/whitman/preserve/evidence/demo-20261022-052320-live-A
+  40. A                PRESERVE  rc=0   ok           /home/whitman/preserve/evidence/demo-20261022-052450-live-A

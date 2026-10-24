@@ -1,0 +1,43 @@
+PRESERVE -- checkpoint instead of kill under memory pressure
+kernel : 6.18.33.2-microsoft-standard-WSL2
+date   : 2026-10-25 00:37:43 IST
+CRIU   : 4.2.1
+arena  : budget 2048 MiB; ARENA: before 614.1 MiB in 2 image(s); deleted 0 (0.0 MiB); kept 2 still-checkpointed; now 614.1 of 2048 MiB
+logs   : /home/whitman/preserve/evidence/video-20261025-003739
+total runtime: 17 min 13 s
+
+TABLE 1 - SCENARIOS
+Scenario | Mode     | Valuable job outcome    | Work lost (s) | Work preserved (s) | Capture time (s) | Restore time (s) | Hash chain (mismatches) | Check
+---------+----------+-------------------------+---------------+--------------------+------------------+------------------+-------------------------+------
+A        | baseline | not touched             | 0.00          | -                  | -                | -                | 0                       | PASS
+A        | PRESERVE | preserved               | 0.00          | 7.79               | 0.26             | 0.15             | 0                       | PASS
+B        | baseline | killed                  | 12.46         | -                  | -                | -                | 0                       | PASS
+B        | PRESERVE | preserved               | 0.00          | 11.25              | 0.31             | 0.32             | 0                       | PASS
+C        | baseline | killed (2/2 members)    | 19.72         | -                  | -                | -                | 0 (2 chains)            | PASS
+C        | PRESERVE | preserved (2/2 members) | 0.00          | 16.97              | 0.29             | 0.19             | 0 (2 chains)            | PASS
+
+TABLE 2 - FAULT INJECTION (scenario B)
+Fault           | Expected safe behaviour                              | Observed                                                                                                         | Verified
+----------------+------------------------------------------------------+------------------------------------------------------------------------------------------------------------------+---------
+arena-too-small | M3 denies capture -> STAND DOWN, no dump             | stood down; compute_job killed by kernel OOM                                                                     | YES
+dump-fail       | real dump fails (ENOSPC) -> clean up, STAND DOWN     | dump failed (ENOSPC); survived the failure, then killed by kernel OOM                                            | YES
+dump-timeout    | dump times out -> clean up, STAND DOWN               | dump failed (timeout); survived the failure, then killed by kernel OOM                                           | YES
+restore-blocked | restore denied -> image kept on disk, no restore     | checkpointed, not restored; image present on disk                                                                | YES
+stale-pid       | PID-reuse guard refuses -> STAND DOWN, no dump       | stood down; compute_job killed by kernel OOM                                                                     | YES
+governor-dies   | governor crashes -> kernel in charge, nothing frozen | governor died before capture; compute_job still under kernel (2 workload pid(s) left running); governor exit 137 | YES
+
+TABLE 3 - SAFETY GATE
+Target                | Refusal class                                    | Refused
+----------------------+--------------------------------------------------+--------
+init                  | kernel/init PIDs are never touched               | YES
+kernel                | kernel/init PIDs are never touched               | YES
+this process          | that is the governor itself or its parent        | YES
+parent shell          | that is the governor itself or its parent        | YES
+non-integer           | pid is not an integer                            | YES
+not launched by us    | not launched by this governor (not in whitelist) | YES
+SIGHUP to self        | signal 1 is not in the allowed set               | YES
+CRIU dump of pid 1    | kernel/init PIDs are never touched               | YES
+CRIU dump of pid 3197 | that is the governor itself or its parent        | YES
+CRIU dump of pid 3193 | that is the governor itself or its parent        | YES
+
+RESULT: 22/22 checks passed
